@@ -1,0 +1,12 @@
+northwind_dbt:
+  target: ci
+  outputs:
+    ci:
+      type: snowflake
+      account: "{{ env_var('ACCOUNT') }}"
+      user: "{{ env_var('USER') }}"
+      password: "{{ env_var('PASSWORD') }}"
+      role: DBT_CI
+      database: ANALYTICS_CI
+      warehouse: COMPUTE_WH
+      threads: 4

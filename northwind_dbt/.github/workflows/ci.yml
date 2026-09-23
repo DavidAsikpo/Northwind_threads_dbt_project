@@ -1,0 +1,35 @@
+name: dbt CI
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      DBT_PROFILES_DIR: .
+      SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+      SNOWFLAKE_USER: ${{ secrets.CI_USER }}
+      SNOWFLAKE_PASSWORD: ${{ secrets.CI_PASSWORD }}
+      SNOWFLAKE_SCHEMA: PR_${{ github.event.number }}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dbt
+        run: pip install dbt-snowflake
+
+      - name: Install dbt packages
+        run: dbt deps
+
+      - name: dbt debug
+        run: dbt build --target ci --select tag:none 2>/dev/null; dbt debug --target ci
+
+      - name: dbt build
+        run: dbt build --target ci

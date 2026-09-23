@@ -1,0 +1,6 @@
+python-dotenv
+snowflake-connector-python
+pandas
+"snowflake-connector-python[pandas]"
+dbt-core
+dbt-snowflake
