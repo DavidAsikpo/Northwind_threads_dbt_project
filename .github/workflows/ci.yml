@@ -8,11 +8,14 @@ jobs:
   build:
     runs-on: ubuntu-latest
     env:
-      DBT_PROFILES_DIR: .
+      DBT_PROFILES_DIR: NorthWind_Thread_project/northwind_dbt/
       SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
       SNOWFLAKE_USER: ${{ secrets.CI_USER }}
       SNOWFLAKE_PASSWORD: ${{ secrets.CI_PASSWORD }}
       SNOWFLAKE_SCHEMA: PR_${{ github.event.number }}
+    defaults:
+      run:
+        working-directory: northwind_dbt
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4

@@ -3,9 +3,9 @@ northwind_dbt:
   outputs:
     ci:
       type: snowflake
-      account: "{{ env_var('ACCOUNT') }}"
-      user: "{{ env_var('USER') }}"
-      password: "{{ env_var('PASSWORD') }}"
+      account: "{{ env_var('SNOWFLAKE_ACCOUNT') }}"
+      user: "{{ env_var('CI_USER') }}"
+      password: "{{ env_var('CI_PASSWORD') }}"
       role: DBT_CI
       database: ANALYTICS_CI
       warehouse: COMPUTE_WH
