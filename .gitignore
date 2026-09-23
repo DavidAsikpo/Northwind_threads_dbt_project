@@ -10,3 +10,4 @@ wheels/
 .venv
 raw_data
 logs
+.env
