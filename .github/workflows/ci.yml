@@ -8,7 +8,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     env:
-      DBT_PROFILES_DIR: NorthWind_Thread_project/northwind_dbt/
+      DBT_PROFILES_DIR: .
       SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
       SNOWFLAKE_USER: ${{ secrets.CI_USER }}
       SNOWFLAKE_PASSWORD: ${{ secrets.CI_PASSWORD }}
