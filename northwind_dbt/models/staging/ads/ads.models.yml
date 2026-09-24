@@ -1,0 +1,100 @@
+version: 2
+
+models:
+  - name: stg_ads__google_ads_daily
+    description: >
+      Cleaned, one-row-per-date-per-campaign staging model for Google Ads
+      daily performance. Cost converted from micros to dollars.
+    columns:
+      - name: date_day
+        tests:
+          - not_null
+
+      - name: customer_id
+        description: Google Ads account ID (not a Northwind customer).
+
+      - name: campaign_id
+        tests:
+          - not_null
+
+      - name: campaign_name
+
+      - name: campaign_type
+        tests:
+          - accepted_values:
+              values: ['search', 'shopping', 'performance_max', 'video']
+
+      - name: impressions
+        tests:
+          - not_null
+
+      - name: clicks
+        tests:
+          - not_null
+
+      - name: cost_micros
+
+      - name: amount_spent
+        tests:
+          - not_null
+
+      - name: conversions
+        description: >
+          Platform-reported conversions — do not treat as verified new
+          customers. See source documentation for the known overstatement.
+
+      - name: conversions_value
+
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns: [date_day, campaign_id]
+
+  - name: stg_ads__meta_ads_daily
+    description: >
+      Cleaned, one-row-per-date-per-campaign staging model for Meta Ads
+      daily performance.
+    columns:
+      - name: date_day
+        tests:
+          - not_null
+
+      - name: account_id
+        description: Meta Ads account ID.
+
+      - name: campaign_id
+        tests:
+          - not_null
+
+      - name: campaign_name
+
+      - name: objective
+        tests:
+          - accepted_values:
+              values: ['outcome_sales', 'outcome_leads', 'outcome_awareness']
+
+      - name: impressions
+        tests:
+          - not_null
+
+      - name: reach
+
+      - name: link_clicks
+        tests:
+          - not_null
+
+      - name: amount_spent
+        tests:
+          - not_null
+
+      - name: currency
+
+      - name: purchases
+        description: >
+          Platform-reported purchases — do not treat as verified new
+          customers.
+
+      - name: purchase_value
+
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns: [date_day, campaign_id]

@@ -1,0 +1,130 @@
+version: 2
+
+sources:
+  - name: ads_source
+    database: northwind_source
+    schema: ads
+    loaded_at_field: _fivetran_synced
+    freshness:
+      warn_after: {count: 24, period: hour}
+      error_after: {count: 48, period: hour}
+
+    tables:
+      - name: GOOGLE_ADS_DAILY
+        description: >
+          Daily performance metrics per campaign from the Google Ads API.
+          Grain: one row per date x campaign_id. Rows are missing for
+          2023-11-07 to 2023-11-09 (a planted API outage gap).
+        columns:
+          - name: DATE
+            description: The day these metrics apply to.
+            tests:
+              - not_null
+
+          - name: CUSTOMER_ID
+            description: >
+              The Google Ads account ID (e.g. '177-441-9032'). Not related
+              to Northwind's own customer_id — do not join on this column.
+
+          - name: CAMPAIGN_ID
+            description: Unique ID for the ad campaign.
+            tests:
+              - not_null
+
+          - name: CAMPAIGN_NAME
+            description: Human-readable campaign name.
+            tests:
+              - not_null
+
+          - name: CAMPAIGN_TYPE
+            description: "Google Ads campaign type: SEARCH, SHOPPING, PERFORMANCE_MAX, VIDEO."
+            tests:
+              - accepted_values:
+                  values: ['SEARCH', 'SHOPPING', 'PERFORMANCE_MAX', 'VIDEO']
+
+          - name: IMPRESSIONS
+            tests:
+              - not_null
+
+          - name: CLICKS
+            tests:
+              - not_null
+
+          - name: COST_MICROS
+            description: Spend in micros. Divide by 1,000,000 for dollars.
+            tests:
+              - not_null
+
+          - name: CONVERSIONS
+            description: >
+              Platform-reported conversions. Known to overstate real new
+              customers by ~1.2-1.7x — do not use directly for CAC without
+              reconciling against actual Shopify/app_db new-customer counts.
+
+          - name: CONVERSIONS_VALUE
+
+          - name: _FIVETRAN_SYNCED
+            description: Ingestion timestamp from the loader.
+            tests:
+              - not_null
+
+        tests:
+          - dbt_utils.unique_combination_of_columns:
+              combination_of_columns: [DATE, CAMPAIGN_ID]
+
+      - name: META_ADS_DAILY
+        description: >
+          Daily performance metrics per campaign from the Meta Ads API.
+          Grain: one row per date x campaign_id.
+        columns:
+          - name: DATE
+            tests:
+              - not_null
+
+          - name: ACCOUNT_ID
+            description: The Meta Ads account ID.
+
+          - name: CAMPAIGN_ID
+            tests:
+              - not_null
+
+          - name: CAMPAIGN_NAME
+            tests:
+              - not_null
+
+          - name: OBJECTIVE
+            description: "Meta campaign objective: OUTCOME_SALES, OUTCOME_LEADS, OUTCOME_AWARENESS."
+            tests:
+              - accepted_values:
+                  values: ['OUTCOME_SALES', 'OUTCOME_LEADS', 'OUTCOME_AWARENESS']
+
+          - name: IMPRESSIONS
+            tests:
+              - not_null
+
+          - name: REACH
+
+          - name: LINK_CLICKS
+            tests:
+              - not_null
+
+          - name: SPEND
+            tests:
+              - not_null
+
+          - name: CURRENCY
+
+          - name: PURCHASES
+            description: >
+              Platform-reported purchases. Known to overstate real new
+              customers — do not use directly for CAC.
+
+          - name: PURCHASE_VALUE
+
+          - name: _FIVETRAN_SYNCED
+            tests:
+              - not_null
+
+        tests:
+          - dbt_utils.unique_combination_of_columns:
+              combination_of_columns: [DATE, CAMPAIGN_ID]
