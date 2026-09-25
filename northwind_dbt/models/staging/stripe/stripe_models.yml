@@ -1,0 +1,385 @@
+version: 2
+
+models:
+  - name: stg_stripe__customers
+    description: One row per Stripe customer, bridges to Shopify.
+    columns:
+      - name: customer_id
+        tests:
+          - unique
+          - not_null
+
+      - name: email
+      - name: name
+
+      - name: created_at
+        tests:
+          - not_null
+
+      - name: is_delinquent
+      - name: currency
+
+      - name: shopify_customer_id
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_shopify__customers')
+              field: customer_id
+
+      - name: _fivetran_synced
+
+  - name: stg_stripe__plans
+    description: Static reference — the 3 Threads Club subscription tiers.
+    columns:
+      - name: plan_id
+        tests:
+          - unique
+          - not_null
+
+      - name: product
+      - name: plan_nickname
+
+      - name: amount_cents
+        tests:
+          - not_null
+
+      - name: amount_usd
+        tests:
+          - not_null
+
+      - name: billing_interval
+        tests:
+          - accepted_values:
+              values: ['month', 'year']
+
+      - name: currency
+      - name: is_active
+      - name: _fivetran_synced
+
+  - name: stg_stripe__subscriptions
+    description: >
+      Current state of each subscription. cancel_at_period_end = true
+      with canceled_at set but ended_at null indicates a pending
+      cancellation, still active until period end.
+    columns:
+      - name: subscription_id
+        tests:
+          - unique
+          - not_null
+
+      - name: customer_id
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_stripe__customers')
+              field: customer_id
+
+      - name: plan_id
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_stripe__plans')
+              field: plan_id
+
+      - name: status
+        tests:
+          - accepted_values:
+              values: ['active', 'canceled']
+
+      - name: created_at
+        tests:
+          - not_null
+
+      - name: start_date
+        tests:
+          - not_null
+
+      - name: current_period_start
+        tests:
+          - not_null
+
+      - name: current_period_end
+        tests:
+          - not_null
+
+      - name: cancel_at_period_end
+      - name: canceled_at
+      - name: ended_at
+
+      - name: cancel_reason
+        tests:
+          - accepted_values:
+              values:
+                - too_expensive
+                - not_using
+                - found_alternative
+                - too_many_items
+                - customer_service
+                - moved
+                - other
+                - payment_failed
+              config:
+                where: "cancel_reason is not null"
+
+      - name: coupon_id
+      - name: quantity
+      - name: latest_invoice_id
+
+      - name: shopify_customer_id
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_shopify__customers')
+              field: customer_id
+
+      - name: _fivetran_synced
+
+  - name: stg_stripe__subscription_plan_changes
+    description: >
+      One row per upgrade/downgrade/switch-to-annual event. Used to
+      construct MRR movement (expansion/contraction) logic.
+    columns:
+      - name: subscription_id
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_stripe__subscriptions')
+              field: subscription_id
+
+      - name: changed_at
+        tests:
+          - not_null
+
+      - name: old_plan_id
+        tests:
+          - relationships:
+              to: ref('stg_stripe__plans')
+              field: plan_id
+
+      - name: new_plan_id
+        tests:
+          - relationships:
+              to: ref('stg_stripe__plans')
+              field: plan_id
+
+      - name: change_type
+        tests:
+          - accepted_values:
+              values: ['upgrade', 'downgrade', 'switch_to_annual']
+
+      - name: _fivetran_synced
+
+  - name: stg_stripe__invoices
+    description: >
+      One row per subscription billing cycle. amount_paid_cents = 0 with
+      status 'open' or 'uncollectible' indicates a failed/unrecovered
+      payment attempt.
+    columns:
+      - name: invoice_id
+        tests:
+          - unique
+          - not_null
+
+      - name: subscription_id
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_stripe__subscriptions')
+              field: subscription_id
+
+      - name: customer_id
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_stripe__customers')
+              field: customer_id
+
+      - name: plan_id
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_stripe__plans')
+              field: plan_id
+
+      - name: subtotal_cents
+        tests:
+          - not_null
+
+      - name: discount_amount_cents
+
+      - name: amount_due_cents
+        tests:
+          - not_null
+
+      - name: amount_paid_cents
+        tests:
+          - not_null
+
+      - name: amount_due_usd
+        tests:
+          - not_null
+
+      - name: amount_paid_usd
+        tests:
+          - not_null
+
+      - name: currency
+
+      - name: status
+        tests:
+          - accepted_values:
+              values: ['paid', 'open', 'uncollectible']
+
+      - name: billing_reason
+        tests:
+          - accepted_values:
+              values: ['subscription_create', 'subscription_cycle']
+
+      - name: attempt_count
+        tests:
+          - not_null
+
+      - name: coupon_id
+
+      - name: period_start
+        tests:
+          - not_null
+
+      - name: period_end
+        tests:
+          - not_null
+
+      - name: created_at
+        tests:
+          - not_null
+
+      - name: paid_at
+      - name: _fivetran_synced
+
+  - name: stg_stripe__charges
+    description: >
+      Every charge attempt, including failed ones. order_id and
+      invoice_id are mutually exclusive. Contains a planted charge gap
+      for 2025-03-14/15 and 8 planted double-charge incidents — not
+      filtered out; expected to be handled in reconciliation logic.
+    columns:
+      - name: charge_id
+        tests:
+          - unique
+          - not_null
+
+      - name: customer_id
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_stripe__customers')
+              field: customer_id
+
+      - name: amount_cents
+        tests:
+          - not_null
+
+      - name: amount_usd
+        tests:
+          - not_null
+
+      - name: amount_refunded_cents
+      - name: currency
+
+      - name: status
+        tests:
+          - accepted_values:
+              values: ['succeeded', 'failed']
+
+      - name: is_paid
+        tests:
+          - not_null
+
+      - name: is_refunded
+
+      - name: created_at
+        tests:
+          - not_null
+
+      - name: invoice_id
+        tests:
+          - relationships:
+              to: ref('stg_stripe__invoices')
+              field: invoice_id
+              config:
+                where: "invoice_id is not null"
+
+      - name: description
+
+      - name: failure_code
+        tests:
+          - accepted_values:
+              values:
+                - card_declined
+                - insufficient_funds
+                - expired_card
+                - incorrect_cvc
+              config:
+                where: "failure_code is not null"
+
+      - name: payment_method_type
+        tests:
+          - accepted_values:
+              values: ['card', 'link', 'apple_pay', 'google_pay']
+
+      - name: fee_cents
+
+      - name: order_id
+        tests:
+          - relationships:
+              to: ref('stg_shopify__orders')
+              field: order_id
+              config:
+                where: "order_id is not null"
+
+      - name: order_number
+      - name: _fivetran_synced
+
+  - name: stg_stripe__refunds
+    description: Mirrors Shopify's refunds table, tied to the Stripe charge_id.
+    columns:
+      - name: refund_id
+        tests:
+          - unique
+          - not_null
+
+      - name: charge_id
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_stripe__charges')
+              field: charge_id
+
+      - name: amount_cents
+        tests:
+          - not_null
+
+      - name: amount_usd
+        tests:
+          - not_null
+
+      - name: currency
+
+      - name: status
+        tests:
+          - accepted_values:
+              values: ['succeeded']
+
+      - name: reason
+
+      - name: created_at
+        tests:
+          - not_null
+
+      - name: shopify_refund_id
+        tests:
+          - relationships:
+              to: ref('stg_shopify__refunds')
+              field: refund_id
+
+      - name: _fivetran_synced

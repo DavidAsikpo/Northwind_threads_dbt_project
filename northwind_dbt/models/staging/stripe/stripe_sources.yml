@@ -1,0 +1,398 @@
+version: 2
+
+sources:
+  - name: stripe
+    database: northwind_source
+    schema: STRIPE
+    loaded_at_field: _fivetran_synced
+    freshness:
+      warn_after: {count: 6, period: hour}
+      error_after: {count: 12, period: hour}
+
+    tables:
+      - name: CUSTOMERS
+        description: >
+          One row per Stripe customer. Bridges to Shopify via
+          metadata_shopify_customer_id.
+        columns:
+          - name: CUSTOMER_ID
+            description: Primary key. Stripe-format ID (cus_...).
+            tests:
+              - unique
+              - not_null
+
+          - name: EMAIL
+          - name: NAME
+
+          - name: CREATED
+            tests:
+              - not_null
+
+          - name: DELINQUENT
+          - name: CURRENCY
+
+          - name: METADATA_SHOPIFY_CUSTOMER_ID
+            description: Links back to shopify.customers.customer_id.
+            tests:
+              - not_null
+
+          - name: _FIVETRAN_SYNCED
+            tests:
+              - not_null
+
+      - name: PLANS
+        description: Static reference data — the 3 Threads Club subscription tiers.
+        columns:
+          - name: PLAN_ID
+            description: Primary key.
+            tests:
+              - unique
+              - not_null
+
+          - name: PRODUCT
+          - name: NICKNAME
+
+          - name: AMOUNT
+            description: Price in cents.
+            tests:
+              - not_null
+
+          - name: INTERVAL
+            tests:
+              - accepted_values:
+                  values: ['month', 'year']
+
+          - name: CURRENCY
+          - name: ACTIVE
+          - name: _FIVETRAN_SYNCED
+
+      - name: SUBSCRIPTIONS
+        description: >
+          Current state of each subscription, one row per subscription.
+          cancel_at_period_end = true with canceled_at set but ended_at
+          null indicates a pending cancellation still active until period end.
+        columns:
+          - name: SUBSCRIPTION_ID
+            description: Primary key.
+            tests:
+              - unique
+              - not_null
+
+          - name: CUSTOMER_ID
+            tests:
+              - not_null
+              - relationships:
+                  to: source('stripe', 'CUSTOMERS')
+                  field: CUSTOMER_ID
+
+          - name: PLAN_ID
+            tests:
+              - not_null
+              - relationships:
+                  to: source('stripe', 'PLANS')
+                  field: PLAN_ID
+
+          - name: STATUS
+            tests:
+              - accepted_values:
+                  values: ['active', 'canceled']
+
+          - name: CREATED
+            tests:
+              - not_null
+
+          - name: START_DATE
+            tests:
+              - not_null
+
+          - name: CURRENT_PERIOD_START
+            tests:
+              - not_null
+
+          - name: CURRENT_PERIOD_END
+            tests:
+              - not_null
+
+          - name: CANCEL_AT_PERIOD_END
+
+          - name: CANCELED_AT
+
+          - name: ENDED_AT
+
+          - name: CANCEL_REASON
+            tests:
+              - accepted_values:
+                  values:
+                    - too_expensive
+                    - not_using
+                    - found_alternative
+                    - too_many_items
+                    - customer_service
+                    - moved
+                    - other
+                    - payment_failed
+                  config:
+                    where: "CANCEL_REASON is not null"
+
+          - name: COUPON_ID
+
+          - name: QUANTITY
+
+          - name: LATEST_INVOICE_ID
+
+          - name: METADATA_SHOPIFY_CUSTOMER_ID
+            tests:
+              - not_null
+
+          - name: _FIVETRAN_SYNCED
+            tests:
+              - not_null
+
+      - name: SUBSCRIPTION_PLAN_CHANGES
+        description: >
+          One row per upgrade/downgrade/switch-to-annual event. Used to
+          construct MRR movement (expansion/contraction) logic.
+        columns:
+          - name: SUBSCRIPTION_ID
+            tests:
+              - not_null
+              - relationships:
+                  to: source('stripe', 'SUBSCRIPTIONS')
+                  field: SUBSCRIPTION_ID
+
+          - name: CHANGED_AT
+            tests:
+              - not_null
+
+          - name: OLD_PLAN_ID
+            tests:
+              - relationships:
+                  to: source('stripe', 'PLANS')
+                  field: PLAN_ID
+
+          - name: NEW_PLAN_ID
+            tests:
+              - relationships:
+                  to: source('stripe', 'PLANS')
+                  field: PLAN_ID
+
+          - name: CHANGE_TYPE
+            tests:
+              - accepted_values:
+                  values: ['upgrade', 'downgrade', 'switch_to_annual']
+
+          - name: _FIVETRAN_SYNCED
+
+      - name: INVOICES
+        description: >
+          One row per subscription billing cycle. amount_paid = 0 with
+          status 'open' or 'uncollectible' indicates a failed/unrecovered
+          payment attempt.
+        columns:
+          - name: INVOICE_ID
+            description: Primary key.
+            tests:
+              - unique
+              - not_null
+
+          - name: SUBSCRIPTION_ID
+            tests:
+              - not_null
+              - relationships:
+                  to: source('stripe', 'SUBSCRIPTIONS')
+                  field: SUBSCRIPTION_ID
+
+          - name: CUSTOMER_ID
+            tests:
+              - not_null
+              - relationships:
+                  to: source('stripe', 'CUSTOMERS')
+                  field: CUSTOMER_ID
+
+          - name: PLAN_ID
+            tests:
+              - not_null
+
+          - name: SUBTOTAL
+            description: Cents, before discount.
+            tests:
+              - not_null
+
+          - name: DISCOUNT_AMOUNT
+
+          - name: AMOUNT_DUE
+            tests:
+              - not_null
+
+          - name: AMOUNT_PAID
+            tests:
+              - not_null
+
+          - name: CURRENCY
+
+          - name: STATUS
+            tests:
+              - accepted_values:
+                  values: ['paid', 'open', 'uncollectible']
+
+          - name: BILLING_REASON
+            tests:
+              - accepted_values:
+                  values: ['subscription_create', 'subscription_cycle']
+
+          - name: ATTEMPT_COUNT
+            tests:
+              - not_null
+
+          - name: COUPON_ID
+
+          - name: PERIOD_START
+            tests:
+              - not_null
+
+          - name: PERIOD_END
+            tests:
+              - not_null
+
+          - name: CREATED
+            tests:
+              - not_null
+
+          - name: PAID_AT
+
+          - name: _FIVETRAN_SYNCED
+            tests:
+              - not_null
+
+      - name: CHARGES
+        description: >
+          Every charge attempt — order payments (metadata_order_id set)
+          and subscription payments (invoice_id set), including failed
+          attempts. metadata_order_id and invoice_id are mutually
+          exclusive. Contains a planted ~45% charge gap for
+          2025-03-14/15 (Stripe webhook outage) and 8 planted
+          double-charge incidents.
+        columns:
+          - name: CHARGE_ID
+            description: Primary key.
+            tests:
+              - unique
+              - not_null
+
+          - name: CUSTOMER_ID
+            tests:
+              - not_null
+              - relationships:
+                  to: source('stripe', 'CUSTOMERS')
+                  field: CUSTOMER_ID
+
+          - name: AMOUNT
+            description: Cents.
+            tests:
+              - not_null
+
+          - name: AMOUNT_REFUNDED
+
+          - name: CURRENCY
+
+          - name: STATUS
+            tests:
+              - accepted_values:
+                  values: ['succeeded', 'failed']
+
+          - name: PAID
+            tests:
+              - not_null
+
+          - name: REFUNDED
+
+          - name: CREATED
+            tests:
+              - not_null
+
+          - name: INVOICE_ID
+            tests:
+              - relationships:
+                  to: source('stripe', 'INVOICES')
+                  field: INVOICE_ID
+                  config:
+                    where: "INVOICE_ID is not null"
+
+          - name: DESCRIPTION
+
+          - name: FAILURE_CODE
+            tests:
+              - accepted_values:
+                  values:
+                    - card_declined
+                    - insufficient_funds
+                    - expired_card
+                    - incorrect_cvc
+                  config:
+                    where: "FAILURE_CODE is not null"
+
+          - name: PAYMENT_METHOD_TYPE
+            tests:
+              - accepted_values:
+                  values: ['card', 'link', 'apple_pay', 'google_pay']
+
+          - name: FEE
+
+          - name: METADATA_ORDER_ID
+            tests:
+              - relationships:
+                  to: source('shopify', 'ORDERS')
+                  field: ORDER_ID
+                  config:
+                    where: "METADATA_ORDER_ID is not null"
+
+          - name: METADATA_ORDER_NUMBER
+
+          - name: _FIVETRAN_SYNCED
+            tests:
+              - not_null
+
+      - name: REFUNDS
+        description: >
+          Mirrors Shopify's refunds table, tied to the Stripe charge_id.
+        columns:
+          - name: REFUND_ID
+            description: Primary key.
+            tests:
+              - unique
+              - not_null
+
+          - name: CHARGE_ID
+            tests:
+              - not_null
+              - relationships:
+                  to: source('stripe', 'CHARGES')
+                  field: CHARGE_ID
+
+          - name: AMOUNT
+            description: Cents.
+            tests:
+              - not_null
+
+          - name: CURRENCY
+
+          - name: STATUS
+            tests:
+              - accepted_values:
+                  values: ['succeeded']
+
+          - name: REASON
+
+          - name: CREATED
+            tests:
+              - not_null
+
+          - name: METADATA_SHOPIFY_REFUND_ID
+            tests:
+              - relationships:
+                  to: source('shopify', 'REFUNDS')
+                  field: REFUND_ID
+
+          - name: _FIVETRAN_SYNCED
+            tests:
+              - not_null

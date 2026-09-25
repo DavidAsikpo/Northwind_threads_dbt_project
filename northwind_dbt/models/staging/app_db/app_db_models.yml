@@ -1,0 +1,104 @@
+version: 2
+
+models:
+  - name: stg_app_db__users
+    description: >
+      Website account records, cleaned. Only exists for non-guest
+      customers. GDPR-deleted accounts flagged via is_gdpr_deleted rather
+      than removed, so downstream models can choose to include/exclude.
+    columns:
+      - name: user_id
+        tests:
+          - unique
+          - not_null
+
+      - name: shopify_customer_id
+        tests:
+          - unique
+          - not_null
+          - relationships:
+              to: ref('stg_shopify__customers')
+              field: customer_id
+
+      - name: email
+      - name: first_name
+      - name: last_name
+
+      - name: created_at
+        tests:
+          - not_null
+
+      - name: updated_at
+      - name: is_email_verified
+      - name: is_marketing_opt_in
+      - name: utm_source
+      - name: utm_medium
+      - name: utm_campaign
+      - name: referrer_domain
+      - name: landing_page
+      - name: last_login_at
+      - name: deleted_at
+
+      - name: is_gdpr_deleted
+        tests:
+          - not_null
+
+      - name: _fivetran_synced
+
+  - name: stg_app_db__products
+    description: >
+      Product catalog, current price. Order lines hold the historical
+      price at time of sale, which may differ from this current price
+      due to the 2025-01-01 price increase on select categories.
+    columns:
+      - name: product_id
+        tests:
+          - unique
+          - not_null
+
+      - name: sku
+        tests:
+          - unique
+          - not_null
+
+      - name: product_name
+        tests:
+          - not_null
+
+      - name: category
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - Tees
+                - Hoodies & Sweats
+                - Denim
+                - Outerwear
+                - Accessories
+                - Socks & Underwear
+                - Footwear
+
+      - name: price
+        tests:
+          - not_null
+
+      - name: unit_cost
+        tests:
+          - not_null
+
+      - name: launched_on
+        tests:
+          - not_null
+
+      - name: is_active
+        tests:
+          - not_null
+
+      - name: supplier
+
+      - name: created_at
+        tests:
+          - not_null
+
+      - name: updated_at
+      - name: _fivetran_synced

@@ -1,0 +1,109 @@
+version: 2
+
+models:
+  - name: stg_zendesk__tickets
+    description: >
+      One row per support ticket, cleaned. order_id is null for
+      subscription-only tickets — join to a customer via requester_email
+      in that case, not order_id. requester_id is NOT a reliable
+      foreign key to shopify.customers.
+    columns:
+      - name: ticket_id
+        tests:
+          - unique
+          - not_null
+
+      - name: requester_id
+        tests:
+          - not_null
+
+      - name: requester_email
+        tests:
+          - not_null
+
+      - name: created_at
+        tests:
+          - not_null
+
+      - name: updated_at
+        tests:
+          - not_null
+
+      - name: solved_at
+
+      - name: status
+        tests:
+          - accepted_values:
+              values: ['new', 'open', 'pending', 'solved', 'closed']
+
+      - name: priority
+        tests:
+          - accepted_values:
+              values: ['low', 'normal', 'high', 'urgent']
+
+      - name: ticket_type
+        tests:
+          - accepted_values:
+              values: ['question', 'incident']
+
+      - name: channel
+        tests:
+          - accepted_values:
+              values: ['email', 'chat', 'web_form', 'social']
+
+      - name: subject
+        tests:
+          - not_null
+
+      - name: category
+        tests:
+          - accepted_values:
+              values:
+                - shipping_delay
+                - sizing
+                - order_status
+                - product_question
+                - address_change
+                - damaged_item
+                - discount_code
+                - other
+                - return_request
+                - product_defect
+                - billing
+                - cancel_request
+
+      - name: order_id
+        tests:
+          - relationships:
+              to: ref('stg_shopify__orders')
+              field: order_id
+              config:
+                where: "order_id is not null"
+
+      - name: group_name
+        tests:
+          - accepted_values:
+              values: ['CX-Tier1', 'CX-Tier2', 'Billing']
+
+      - name: assignee_id
+        tests:
+          - not_null
+
+      - name: satisfaction_rating
+        tests:
+          - accepted_values:
+              values: ['good', 'bad']
+              config:
+                where: "satisfaction_rating is not null"
+
+      - name: first_reply_minutes
+        tests:
+          - not_null
+
+      - name: resolution_minutes
+
+      - name: is_solved
+        tests:
+          - not_null
+
+      - name: _fivetran_synced

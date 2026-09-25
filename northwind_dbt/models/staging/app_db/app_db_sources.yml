@@ -1,0 +1,132 @@
+version: 2
+
+sources:
+  - name: app_db
+    database: northwind_source
+    schema: APP_DB
+    loaded_at_field: _fivetran_synced
+    freshness:
+      warn_after: {count: 12, period: hour}
+      error_after: {count: 24, period: hour}
+
+    tables:
+      - name: USERS
+        description: >
+          Website account records. Only exists for non-guest customers
+          (~88% of the customer base) — guests never created an account,
+          so they have no row here. ~0.8% of rows are GDPR-deleted
+          (placeholder email, null names).
+        columns:
+          - name: USER_ID
+            description: Primary key.
+            tests:
+              - unique
+              - not_null
+
+          - name: SHOPIFY_CUSTOMER_ID
+            description: Links back to shopify.customers.customer_id.
+            tests:
+              - unique
+
+          - name: EMAIL
+            description: >
+              Placeholder value (deleted+<id>@northwind-threads.com) for
+              GDPR-deleted accounts.
+
+          - name: FIRST_NAME
+          - name: LAST_NAME
+
+          - name: CREATED_AT
+            tests:
+              - not_null
+
+          - name: UPDATED_AT
+
+          - name: EMAIL_VERIFIED
+          - name: MARKETING_OPT_IN
+
+          - name: UTM_SOURCE
+            description: >
+              Inconsistent raw values (facebook/fb/Facebook/meta/ig, etc.)
+              — normalize via seeds/channel_mapping in staging. Null for
+              organic/referral-only traffic and during the Jun-Aug 2024
+              Meta tracking gap.
+
+          - name: UTM_MEDIUM
+          - name: UTM_CAMPAIGN
+
+          - name: REFERRER_DOMAIN
+            description: Fallback attribution source when UTM fields are null.
+
+          - name: LANDING_PAGE
+
+          - name: LAST_LOGIN_AT
+
+          - name: DELETED_AT
+            description: Set for GDPR-deleted accounts.
+
+          - name: _FIVETRAN_SYNCED
+            tests:
+              - not_null
+
+      - name: PRODUCTS
+        description: >
+          Product catalog, current price. Prices on Hoodies/Denim/Outerwear
+          rose ~6% on 2025-01-01 — order_lines holds the historical price
+          at time of sale, not this current price.
+        columns:
+          - name: PRODUCT_ID
+            description: Primary key.
+            tests:
+              - unique
+              - not_null
+
+          - name: SKU
+            tests:
+              - unique
+              - not_null
+
+          - name: NAME
+            tests:
+              - not_null
+
+          - name: CATEGORY
+            tests:
+              - not_null
+              - accepted_values:
+                  values:
+                    - Tees
+                    - Hoodies & Sweats
+                    - Denim
+                    - Outerwear
+                    - Accessories
+                    - Socks & Underwear
+                    - Footwear
+
+          - name: PRICE
+            tests:
+              - not_null
+
+          - name: UNIT_COST
+            tests:
+              - not_null
+
+          - name: LAUNCHED_ON
+            tests:
+              - not_null
+
+          - name: IS_ACTIVE
+            tests:
+              - not_null
+
+          - name: SUPPLIER
+
+          - name: CREATED_AT
+            tests:
+              - not_null
+
+          - name: UPDATED_AT
+
+          - name: _FIVETRAN_SYNCED
+            tests:
+              - not_null

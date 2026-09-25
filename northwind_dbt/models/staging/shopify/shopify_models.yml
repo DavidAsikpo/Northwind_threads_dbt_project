@@ -1,0 +1,204 @@
+version: 2
+
+models:
+  - name: stg_shopify__customers
+    description: >
+      One row per customer record, deduplicated and cleaned. Soft-deleted
+      rows excluded. ~1.2% of rows share an email with another customer_id
+      (duplicate humans) — not deduplicated here, handled in dim_customers.
+    columns:
+      - name: customer_id
+        tests:
+          - unique
+          - not_null
+
+      - name: email
+        tests:
+          - not_null
+
+      - name: first_name
+      - name: last_name
+
+      - name: created_at
+        tests:
+          - not_null
+
+      - name: updated_at
+      - name: accepts_marketing
+      - name: country_code
+      - name: province_code
+
+      - name: state
+        tests:
+          - accepted_values:
+              values: ['enabled', 'disabled', 'invited', 'declined']
+
+      - name: tags
+      - name: _fivetran_deleted
+      - name: _fivetran_synced
+
+  - name: stg_shopify__orders
+    description: >
+      One row per order, deduplicated on latest _fivetran_synced.
+      Test orders and soft-deleted rows excluded.
+    columns:
+      - name: order_id
+        tests:
+          - unique
+          - not_null
+
+      - name: order_number
+        tests:
+          - not_null
+
+      - name: customer_id
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_shopify__customers')
+              field: customer_id
+
+      - name: email
+
+      - name: created_at
+        tests:
+          - not_null
+
+      - name: updated_at
+      - name: processed_at
+      - name: cancelled_at
+      - name: currency
+
+      - name: total_line_items_price
+        tests:
+          - not_null
+
+      - name: total_discounts
+      - name: total_shipping
+      - name: total_tax
+
+      - name: total_price
+        tests:
+          - not_null
+
+      - name: financial_status
+        tests:
+          - accepted_values:
+              values: ['paid', 'refunded', 'partially_refunded', 'voided', 'pending']
+
+      - name: fulfillment_status
+        tests:
+          - accepted_values:
+              values: ['fulfilled']
+              config:
+                where: "fulfillment_status is not null"
+
+      - name: shipped_at
+
+      - name: source_name
+        tests:
+          - accepted_values:
+              values: ['web', 'mobile_app', 'pos_popup']
+
+      - name: discount_code
+      - name: shipping_country_code
+      - name: shipping_province_code
+
+      - name: is_test_order
+        tests:
+          - not_null
+          - accepted_values:
+              values: [false]
+
+      - name: _fivetran_deleted
+      - name: _fivetran_synced
+
+  - name: stg_shopify__order_lines
+    description: One row per line item within an order.
+    columns:
+      - name: order_line_id
+        tests:
+          - unique
+          - not_null
+
+      - name: order_id
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_shopify__orders')
+              field: order_id
+
+      - name: product_id
+        tests:
+          - not_null
+
+      - name: sku
+        tests:
+          - not_null
+
+      - name: title
+      - name: variant_title
+
+      - name: quantity
+        tests:
+          - not_null
+
+      - name: price
+        tests:
+          - not_null
+
+      - name: total_discount
+      - name: tax_amount
+      - name: _fivetran_synced
+
+  - name: stg_shopify__refunds
+    description: >
+      One row per refunded line item. Subtotal excludes tax and shipping.
+      ~1.5% of refunds sync 3-9 days after creation.
+    columns:
+      - name: refund_id
+        tests:
+          - unique
+          - not_null
+
+      - name: order_id
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_shopify__orders')
+              field: order_id
+
+      - name: order_line_id
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_shopify__order_lines')
+              field: order_line_id
+
+      - name: quantity
+
+      - name: subtotal
+        tests:
+          - not_null
+
+      - name: reason
+        tests:
+          - accepted_values:
+              values:
+                - didnt_fit
+                - changed_mind
+                - not_as_described
+                - defective
+                - arrived_late
+                - other
+
+      - name: restock_type
+        tests:
+          - accepted_values:
+              values: ['return', 'no_restock']
+
+      - name: created_at
+        tests:
+          - not_null
+
+      - name: _fivetran_synced

@@ -1,0 +1,127 @@
+version: 2
+
+sources:
+  - name: zendesk
+    database: northwind_source
+    schema: ZENDESK
+    loaded_at_field: _fivetran_synced
+    freshness:
+      warn_after: {count: 12, period: hour}
+      error_after: {count: 24, period: hour}
+
+    tables:
+      - name: TICKETS
+        description: >
+          One row per support ticket. order_id is null for
+          subscription-only tickets (billing, cancel_request). Contains a
+          planted spike in shipping_delay tickets 2024-10-08 to
+          2024-10-20 (carrier delay incident). requester_email differs
+          from the customer's actual Shopify email for ~1.5% of tickets.
+        columns:
+          - name: TICKET_ID
+            description: Primary key.
+            tests:
+              - unique
+              - not_null
+
+          - name: REQUESTER_ID
+            description: >
+              Internal Zendesk requester ID (3_000_000_000 + an array
+              index) — NOT a reliable join key back to
+              shopify.customers.customer_id. Use requester_email instead.
+            tests:
+              - not_null
+
+          - name: REQUESTER_EMAIL
+            tests:
+              - not_null
+
+          - name: CREATED_AT
+            tests:
+              - not_null
+
+          - name: UPDATED_AT
+            tests:
+              - not_null
+
+          - name: SOLVED_AT
+
+          - name: STATUS
+            tests:
+              - accepted_values:
+                  values: ['new', 'open', 'pending', 'solved', 'closed']
+
+          - name: PRIORITY
+            tests:
+              - accepted_values:
+                  values: ['low', 'normal', 'high', 'urgent']
+
+          - name: TYPE
+            tests:
+              - accepted_values:
+                  values: ['question', 'incident']
+
+          - name: CHANNEL
+            tests:
+              - accepted_values:
+                  values: ['email', 'chat', 'web_form', 'social']
+
+          - name: SUBJECT
+            tests:
+              - not_null
+
+          - name: CATEGORY
+            tests:
+              - accepted_values:
+                  values:
+                    - shipping_delay
+                    - sizing
+                    - order_status
+                    - product_question
+                    - address_change
+                    - damaged_item
+                    - discount_code
+                    - other
+                    - return_request
+                    - product_defect
+                    - billing
+                    - cancel_request
+
+          - name: ORDER_ID
+            description: >
+              Null for subscription-only tickets (billing, cancel_request)
+              — these are linked to a customer via requester_email
+              instead.
+            tests:
+              - relationships:
+                  to: source('shopify', 'ORDERS')
+                  field: ORDER_ID
+                  config:
+                    where: "ORDER_ID is not null"
+
+          - name: GROUP_NAME
+            tests:
+              - accepted_values:
+                  values: ['CX-Tier1', 'CX-Tier2', 'Billing']
+
+          - name: ASSIGNEE_ID
+            tests:
+              - not_null
+
+          - name: SATISFACTION_RATING
+            tests:
+              - accepted_values:
+                  values: ['good', 'bad']
+                  config:
+                    where: "SATISFACTION_RATING is not null"
+
+          - name: FIRST_REPLY_MINUTES
+            tests:
+              - not_null
+
+          - name: RESOLUTION_MINUTES
+            description: Null for unsolved tickets.
+
+          - name: _FIVETRAN_SYNCED
+            tests:
+              - not_null

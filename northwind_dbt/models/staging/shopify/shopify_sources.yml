@@ -1,0 +1,255 @@
+version: 2
+
+sources:
+  - name: shopify
+    database: northwind_source
+    schema: SHOPIFY
+    loaded_at_field: _fivetran_synced
+    freshness:
+      warn_after: {count: 6, period: hour}
+      error_after: {count: 12, period: hour}
+
+    tables:
+      - name: CUSTOMERS
+        description: >
+          One row per customer record. Includes ~1.2% duplicate humans
+          (same person, two customer records sharing an email) and 6
+          internal QA test accounts (qa.tester*@northwind-threads.com).
+        columns:
+          - name: CUSTOMER_ID
+            description: Primary key.
+            tests:
+              - unique
+              - not_null
+
+          - name: EMAIL
+            description: >
+              Sometimes capitalised or has trailing whitespace — clean
+              with lower(trim(...)) in staging before using as a join key.
+            tests:
+              - not_null
+
+          - name: FIRST_NAME
+          - name: LAST_NAME
+
+          - name: CREATED_AT
+            tests:
+              - not_null
+
+          - name: UPDATED_AT
+
+          - name: ACCEPTS_MARKETING
+
+          - name: COUNTRY_CODE
+
+          - name: PROVINCE_CODE
+
+          - name: STATE
+            tests:
+              - accepted_values:
+                  values: ['enabled', 'disabled', 'invited', 'declined']
+
+          - name: TAGS
+
+          - name: _FIVETRAN_DELETED
+            tests:
+              - not_null
+
+          - name: _FIVETRAN_SYNCED
+            tests:
+              - not_null
+
+      - name: ORDERS
+        description: >
+          One row per order VERSION, not per order — ~1k orders appear
+          twice (a stale 'pending' copy alongside the final status).
+          Dedupe on latest _fivetran_synced per order_id in staging.
+          Also includes internal test orders (test = true) which should
+          be excluded from marts.
+        columns:
+          - name: ORDER_ID
+            description: >
+              Not unique at the raw layer due to planted stale duplicate
+              rows — see table description. Uniqueness is enforced after
+              dedup in the staging model, not here.
+            tests:
+              - not_null
+
+          - name: ORDER_NUMBER
+            tests:
+              - not_null
+
+          - name: CUSTOMER_ID
+            tests:
+              - not_null
+              - relationships:
+                  to: source('shopify', 'CUSTOMERS')
+                  field: CUSTOMER_ID
+
+          - name: EMAIL
+
+          - name: CREATED_AT
+            tests:
+              - not_null
+
+          - name: UPDATED_AT
+
+          - name: PROCESSED_AT
+
+          - name: CANCELLED_AT
+
+          - name: CURRENCY
+
+          - name: TOTAL_LINE_ITEMS_PRICE
+            tests:
+              - not_null
+
+          - name: TOTAL_DISCOUNTS
+
+          - name: TOTAL_SHIPPING
+
+          - name: TOTAL_TAX
+
+          - name: TOTAL_PRICE
+            tests:
+              - not_null
+
+          - name: FINANCIAL_STATUS
+            tests:
+              - accepted_values:
+                  values: ['paid', 'refunded', 'partially_refunded', 'voided', 'pending']
+
+          - name: FULFILLMENT_STATUS
+            tests:
+              - accepted_values:
+                  values: ['fulfilled']
+                  config:
+                    where: "FULFILLMENT_STATUS is not null"
+
+          - name: SHIPPED_AT
+
+          - name: SOURCE_NAME
+            tests:
+              - accepted_values:
+                  values: ['web', 'mobile_app', 'pos_popup']
+
+          - name: DISCOUNT_CODE
+
+          - name: SHIPPING_COUNTRY_CODE
+
+          - name: SHIPPING_PROVINCE_CODE
+
+          - name: TEST
+            tests:
+              - not_null
+
+          - name: _FIVETRAN_DELETED
+            tests:
+              - not_null
+
+          - name: _FIVETRAN_SYNCED
+            tests:
+              - not_null
+
+      - name: ORDER_LINES
+        description: >
+          One row per line item within an order. Price/discount/tax
+          reflect values at the time the order was placed.
+        columns:
+          - name: ORDER_LINE_ID
+            description: Primary key.
+            tests:
+              - unique
+              - not_null
+
+          - name: ORDER_ID
+            tests:
+              - not_null
+              - relationships:
+                  to: source('shopify', 'ORDERS')
+                  field: ORDER_ID
+
+          - name: PRODUCT_ID
+            tests:
+              - not_null
+
+          - name: SKU
+            tests:
+              - not_null
+
+          - name: TITLE
+
+          - name: VARIANT_TITLE
+
+          - name: QUANTITY
+            tests:
+              - not_null
+
+          - name: PRICE
+            tests:
+              - not_null
+
+          - name: TOTAL_DISCOUNT
+
+          - name: TAX_AMOUNT
+
+          - name: _FIVETRAN_SYNCED
+            tests:
+              - not_null
+
+      - name: REFUNDS
+        description: >
+          One row per refunded line item. Subtotal excludes tax and
+          shipping. ~1.5% of refunds sync 3-9 days after creation —
+          incremental models referencing this table need a lookback
+          window to avoid missing late-arriving refunds.
+        columns:
+          - name: REFUND_ID
+            description: Primary key.
+            tests:
+              - unique
+              - not_null
+
+          - name: ORDER_ID
+            tests:
+              - not_null
+              - relationships:
+                  to: source('shopify', 'ORDERS')
+                  field: ORDER_ID
+
+          - name: ORDER_LINE_ID
+            tests:
+              - not_null
+              - relationships:
+                  to: source('shopify', 'ORDER_LINES')
+                  field: ORDER_LINE_ID
+
+          - name: QUANTITY
+
+          - name: SUBTOTAL
+            tests:
+              - not_null
+
+          - name: REASON
+            tests:
+              - accepted_values:
+                  values:
+                    - didnt_fit
+                    - changed_mind
+                    - not_as_described
+                    - defective
+                    - arrived_late
+                    - other
+
+          - name: RESTOCK_TYPE
+            tests:
+              - accepted_values:
+                  values: ['return', 'no_restock']
+
+          - name: CREATED_AT
+            tests:
+              - not_null
+
+          - name: _FIVETRAN_SYNCED
+            tests:
+              - not_null

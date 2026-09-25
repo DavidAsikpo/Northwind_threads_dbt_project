@@ -3,7 +3,7 @@ version: 2
 sources:
   - name: ads_source
     database: northwind_source
-    schema: ads
+    schema: ADS
     loaded_at_field: _fivetran_synced
     freshness:
       warn_after: {count: 24, period: hour}
