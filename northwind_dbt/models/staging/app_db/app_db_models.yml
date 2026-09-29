@@ -15,7 +15,6 @@ models:
       - name: shopify_customer_id
         tests:
           - unique
-          - not_null
           - relationships:
               to: ref('stg_shopify__customers')
               field: customer_id

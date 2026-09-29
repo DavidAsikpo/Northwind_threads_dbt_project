@@ -23,3 +23,13 @@ cleaned as (
 )
 
 select * from cleaned
+where order_id not in (
+select
+    order_id
+from {{ source('shopify', 'ORDERS') }} 
+WHERE  TEST = 'true')
+
+
+
+
+
