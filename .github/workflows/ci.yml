@@ -25,14 +25,35 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install dbt
-        run: pip install dbt-snowflake
+      - name: Install dbt and linter
+        run: pip install dbt-snowflake sqlfluff sqlfluff-templater-dbt
 
       - name: Install dbt packages
         run: dbt deps
 
-      - name: dbt debug
-        run: dbt build --target ci --select tag:none; dbt debug --target ci
+      - name: Lint SQL
+        run: sqlfluff lint models --dialect snowflake
 
-      - name: dbt build
-        run: dbt build --target ci
+      - name: dbt debug
+        run: dbt debug --target ci
+
+      - name: Download prod manifest for state comparison
+        uses: dawidd6/action-download-artifact@v6
+        with:
+          workflow: cd.yml
+          branch: main
+          name: prod-manifest
+          path: northwind_dbt/prod-manifest
+        continue-on-error: true
+
+      - name: Seed (needed for any new/changed seed files)
+        run: dbt seed --target ci
+
+      - name: dbt build (slim CI)
+        run: |
+          if [ -f prod-manifest/manifest.json ]; then
+            dbt build --select state:modified+ --defer --state ./prod-manifest --target ci
+          else
+            echo "No prod manifest found — running full build (expected on first run)."
+            dbt build --target ci
+          fi
