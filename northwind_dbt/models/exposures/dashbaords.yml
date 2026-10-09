@@ -1,0 +1,35 @@
+version: 2
+
+exposures:
+  - name: executive_financial_kpi_dashboard
+    label: "Executive Financial & Marketing KPI Dashboard"
+    type: dashboard
+    maturity: high
+    description: >
+      Executive dashboard displaying monthly blended CAC, revenue run-rates,
+      active subscription MRR, and ROAS performance by channel.
+    url:
+    owner:
+      name: Data & Analytics Team
+      email: analytics@company.com
+
+    depends_on:
+      - ref('fct_cac')
+      - ref('fct_gross_revenue')
+      - ref('fct_roas')
+      - ref('fct_mrr_movements')
+      - ref('fct_ltv')
+
+  - name: product_sales_and_returns_dashboard
+    label: "Product Sales & Refund Tracking Dashboard"
+    type: dashboard
+    maturity: medium
+    description: >
+      Monitors unit volume, total refunded values, and product refund rate percentages.
+    url:
+    owner:
+      name: Merchandise & Operations Team
+      email: ops@company.com
+
+    depends_on:
+      - ref('fct_refund_rate_by_product')

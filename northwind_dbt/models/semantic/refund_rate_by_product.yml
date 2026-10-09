@@ -1,0 +1,89 @@
+version: 2
+
+semantic_models:
+  - name: refund_rate_by_product
+    description: "Refund activity by product"
+    model: ref('fct_refund_rate_by_product')
+
+    defaults:
+      agg_time_dimension: order_date
+
+    entities:
+      - name: product
+        type: primary
+        expr: product_id
+
+    dimensions:
+      - name: order_date
+        type: time
+        type_params:
+          time_granularity: day
+
+    measures:
+      - name: total_units_sold
+        description: "Total number of units sold for this product."
+        agg: sum
+        expr: total_units_sold
+
+      - name: total_lines_sold
+        description: "Total number of order lines sold for this product."
+        agg: sum
+        expr: total_lines_sold
+
+      - name: units_refunded
+        description: "Total number of units refunded for this product."
+        agg: sum
+        expr: units_refunded
+
+      - name: lines_refunded
+        description: "Total number of order lines refunded for this product."
+        agg: sum
+        expr: lines_refunded
+
+      - name: total_refunded_amount
+        description: "Total amount of refunds for this product."
+        agg: sum
+        expr: total_refunded_amount
+
+metrics:
+  # 1. Base simple metrics wrapping the measures
+  - name: lines_refunded
+    label: "Lines Refunded"
+    type: simple
+    type_params:
+      measure: lines_refunded
+
+  - name: total_lines_sold
+    label: "Total Lines Sold"
+    type: simple
+    type_params:
+      measure: total_lines_sold
+
+  - name: units_refunded
+    label: "Units Refunded"
+    type: simple
+    type_params:
+      measure: units_refunded
+
+  - name: total_units_sold
+    label: "Total Units Sold"
+    type: simple
+    type_params:
+      measure: total_units_sold
+
+  # 2. Ratio metrics combining the base metrics
+  - name: refund_rate_lines
+    label: "Refund rate (order lines)"
+    description: "Share of order lines that were refunded."
+    type: ratio
+    type_params:
+      numerator: lines_refunded
+      denominator: total_lines_sold
+
+  - name: refund_rate_units
+    label: "Refund rate (units)"
+    description: "Share of units sold that were refunded."
+    type: ratio
+    type_params:
+      numerator: units_refunded
+      denominator: total_units_sold

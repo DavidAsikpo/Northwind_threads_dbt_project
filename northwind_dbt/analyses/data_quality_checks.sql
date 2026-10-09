@@ -119,9 +119,95 @@ order_lines AS (
     SELECT * FROM {{ ref('stg_shopify__order_lines') }}
 )
 
-
 SELECT * 
-FROM orders_lines l
-LEFT JOIN orders p
+FROM order_lines l
+LEFT JOIN orders p ON  p.order_id = l.order_id
 where p.order_id is null
-       
+
+
+
+-------
+SELECT * FROM {{ ref('stg_shopify__refunds') }} shf
+LEFT JOIN  {{ ref('stg_stripe__refunds') }} stf ON shf.refund_id = stf.shopify_refund_id
+WHERE stf.shopify_refund_id is null
+
+SELECT * FROM {{ ref('stg_stripe__refunds') }}
+where shopify_refund_id is null
+
+SELECT count(*) FROM {{ ref('stg_stripe__charges')}}
+
+-- checking where gaps in the stripe_refunds occured in orders
+with unrecorded_stripe_refunds as (
+    -- Shopify refunds that do not have a matching Stripe refund record
+    select
+        r.order_id,
+        r.order_line_id
+    from {{ ref('stg_shopify__refunds') }} r
+    left join {{ ref('stg_stripe__refunds') }} sr
+        on r.refund_id = sr.shopify_refund_id
+    where sr.refund_id is null
+),
+
+relevant_orders as (
+    -- Distinct orders impacted by these unrecorded refunds
+    select distinct order_id
+    from unrecorded_stripe_refunds
+),
+
+refunded_lines as (
+    -- Specific order lines already refunded in these unrecorded refunds
+    select distinct order_line_id
+    from unrecorded_stripe_refunds
+    where order_line_id is not null
+)
+
+select oli.*
+from {{ ref('stg_shopify__order_lines') }} oli
+inner join relevant_orders ro
+    on oli.order_id = ro.order_id
+where oli.order_line_id not in (
+    select order_line_id from refunded_lines
+);
+
+
+--------------------------------
+SELECT * FROM {{ ref('stg_shopify__orders') }}
+WHERE ORDER_ID = '5100000079677'
+
+
+SELECT * FROM {{ ref('stg_stripe__charges') }}
+where order_id = '5100000000004'
+
+
+
+-- checking orders that where not accounted for but refunded/partially refunded 
+with unrecorded_stripe_refunds as (
+    -- Shopify refunds that do not have a matching Stripe refund record
+    select
+        r.order_id,
+        r.order_line_id
+    from {{ ref('stg_shopify__refunds') }} r
+    left join {{ ref('stg_stripe__refunds') }} sr
+        on r.refund_id = sr.shopify_refund_id
+    where sr.refund_id is null
+)
+
+SELECT * FROM {{ ref('stg_shopify__orders') }}
+WHERE ORDER_ID IN  (select distinct order_id
+    from unrecorded_stripe_refunds)
+
+
+SELECT * FROM {{ ref('stg_stripe__refunds') }}
+WHERE SHOPIFY_REFUND_ID = '9000000000001'
+
+SELECT * FROM {{ ref('stg_shopify__refunds') }}
+WHERE REFUND_ID = '9000000000001'
+
+SELECT * FROM {{ ref('stg_shopify__orders') }}
+WHERE ORDER_ID = '5100000000012'
+
+SELECT * FROM {{ ref('stg_stripe__charges') }}
+WHERE CHARGE_ID = 'ch_08d12e6b76c84d3a'
+
+
+

@@ -1,0 +1,26 @@
+version: 2
+
+semantic_models:
+  - name: dimension_product
+    description: "Product dimension model for Northwind"
+    model: ref('dim_products')
+
+    entities:
+      - name: product
+        type: primary
+        expr: product_id
+
+    dimensions:
+      # Categorical attributes to slice metrics by
+      - name: product_name
+        type: categorical
+
+      - name: sku
+        type: categorical
+
+      - name: category
+        type: categorical
+
+      # Numeric attributes to aggregate metrics by
+      - name: price
+        type: categorical
