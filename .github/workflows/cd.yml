@@ -1,0 +1,55 @@
+name: dbt CD
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      DBT_PROFILES_DIR: .
+      SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+      SNOWFLAKE_USER: ${{ secrets.CI_USER }}
+      SNOWFLAKE_PASSWORD: ${{ secrets.CI_PASSWORD }}
+      SNOWFLAKE_SCHEMA: david
+    defaults:
+      run:
+        working-directory: northwind_dbt
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dbt
+        run: pip install dbt-snowflake
+
+      - name: Install dbt packages
+        run: dbt deps
+
+      - name: dbt debug
+        run: dbt debug --target prod
+
+      - name: dbt seed
+        run: dbt seed --target prod
+
+      - name: dbt build
+        run: dbt build --target prod
+
+      - name: dbt docs generate
+        run: dbt docs generate --target prod
+
+      - name: Upload manifest for future slim CI runs
+        uses: actions/upload-artifact@v4
+        with:
+          name: prod-manifest
+          path: northwind_dbt/target/manifest.json
+          retention-days: 90
+
+      - name: Notify on failure
+        if: failure()
+        run: echo "::error::dbt CD failed — check the logs above for the failing step."
