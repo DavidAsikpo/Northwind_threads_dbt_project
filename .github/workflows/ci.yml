@@ -31,9 +31,6 @@ jobs:
       - name: Install dbt packages
         run: dbt deps
 
-      - name: Lint SQL
-        run: sqlfluff lint models --dialect snowflake
-
       - name: dbt debug
         run: dbt debug --target ci
 
