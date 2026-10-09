@@ -1,0 +1,49 @@
+semantic_models:
+  - name: ad_spend
+    model: ref('fct_cac') 
+    defaults:
+      agg_time_dimension: month_start
+
+    entities:
+      - name: channel
+        type: primary
+        expr: channel
+
+    dimensions:
+      - name: month_start
+        type: time
+        type_params:
+          time_granularity: month
+
+    measures:
+      - name: total_spend
+        description: "Total spent on ads this month."
+        agg: sum
+        expr: total_spend
+      - name: new_customers
+        description: "Total new customers acquired this month."
+        agg: sum
+        expr: new_customers
+
+metrics:
+  # step 1: wrap each measure as its own simple metric
+  - name: total_spend
+    label: Total Ad Spend
+    type: simple
+    type_params:
+      measure: total_spend
+
+  - name: new_customers
+    label: New Customers
+    type: simple
+    type_params:
+      measure: new_customers
+
+  # step 2: the ratio metric now references the two metrics above, not the raw measures
+  - name: cac
+    label: CAC
+    description: "Ad spend divided by new customers acquired."
+    type: ratio
+    type_params:
+      numerator: total_spend
+      denominator: new_customers

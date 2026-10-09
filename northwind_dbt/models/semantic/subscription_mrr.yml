@@ -1,0 +1,45 @@
+version: 2
+
+semantic_models:
+  - name: mrr_movements
+    description: >
+      Monthly subscription snapshot with movement classification.
+      One row per subscription per active month.
+    model: ref('fct_mrr_movements')
+    defaults:
+      agg_time_dimension: month_start
+    
+    entities:
+      - name: subscription
+        type: primary
+        expr: subscription_id
+      - name: customer
+        type: foreign
+        expr: shopify_customer_id
+      - name: plan
+        type: foreign
+        expr: plan_id
+
+    dimensions:
+      - name: month_start
+        type: time
+        type_params:
+          time_granularity: month
+      - name: plan_id
+        type: categorical
+      - name: billing_interval
+        type: categorical
+
+    measures:
+      - name: mrr_amount
+        description: "Monthly recurring revenue for this subscription this month."
+        agg: sum
+        expr: mrr_amount
+
+metrics:
+  - name: mrr
+    label: "Monthly Recurring Revenue (MRR)"
+    description: "Total monthly recurring revenue."
+    type: simple
+    type_params:
+      measure: mrr_amount

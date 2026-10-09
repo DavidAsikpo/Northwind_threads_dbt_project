@@ -1,0 +1,17 @@
+version: 2
+
+semantic_models:
+  - name: metricflow_time_spine
+    description: "Time spine leveraging the fiscal calendar seed."
+    model: ref('metricflow_time_spine')
+    primary_entity: date_day
+
+    defaults:
+      agg_time_dimension: date_day
+
+    dimensions:
+      - name: date_day
+        type: time
+        type_params:
+          time_granularity: day
+  

@@ -1,0 +1,26 @@
+version: 2
+
+semantic_models:
+  - name: dimension_customer
+    description: "Customer dimension model for Northwind"
+    model: ref('dim_customers')
+
+
+    entities:
+      - name: customer
+        type: primary
+        expr: customer_id
+
+    dimensions:
+      # Categorical attributes to slice metrics by
+      - name: first_name
+        type: categorical
+
+      - name: last_name
+        type: categorical
+
+      - name: email
+        type: categorical
+
+      - name: country_code
+        type: categorical
