@@ -11,3 +11,13 @@ northwind_dbt:
       warehouse: COMPUTE_WH
       schema: "{{ env_var('SNOWFLAKE_SCHEMA') }}" 
       threads: 4
+    prod:
+      type: snowflake
+      account: "{{ env_var('SNOWFLAKE_ACCOUNT') }}"
+      user: "{{ env_var('SNOWFLAKE_USER') }}"
+      password: "{{ env_var('SNOWFLAKE_PASSWORD') }}"
+      role: DBT_PROD
+      database: NORTHWIND_ANALYTICS
+      warehouse: COMPUTE_WH
+      schema: "{{ env_var('SNOWFLAKE_SCHEMA') }}" 
+      threads: 4
