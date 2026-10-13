@@ -319,5 +319,5 @@ mf query --metrics monthly_recurring_revenue --group-by metric_time__month
 
 ## 👤 Author
 
-**[Your Name]** · Analytics Engineer
+**[David Asikpo]** · Analytics Engineer
 [LinkedIn](https://linkedin.com/in/yourprofile) · [Portfolio](https://yourportfolio.com)
