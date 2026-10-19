@@ -2,12 +2,6 @@
 
 > **A production-grade analytics platform that reconciles cross-functional revenue, multi-touch CAC/LTV attribution, and subscription MRR movements using Snowflake, dbt Core, MetricFlow, and GitHub Actions CI/CD.**
 
-[![dbt-core](https://img.shields.io/badge/dbt--core-v1.8+-orange.svg?logo=dbt)](https://www.getdbt.com/)
-[![Snowflake](https://img.shields.io/badge/Snowflake-Data%20Cloud-29B5E8.svg?logo=snowflake)](https://www.snowflake.com/)
-[![MetricFlow](https://img.shields.io/badge/Semantic%20Layer-MetricFlow-indigo.svg)](https://docs.getdbt.com/docs/build/about-metricflow)
-[![CI/CD](https://img.shields.io/badge/GitHub%20Actions-Slim%20CI-2088FF.svg?logo=githubactions)](https://github.com/features/actions)
-[![Data Quality](https://img.shields.io/badge/Governance-Elementary%20%7C%20dbt--project--evaluator-green.svg)](#-data-quality--observability)
-
 ---
 
 ## Table of Contents
