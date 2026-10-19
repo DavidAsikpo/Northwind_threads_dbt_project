@@ -1,4 +1,4 @@
-# 🧶 Northwind Threads: Modern Analytics Stack & Semantic Layer
+# Northwind Threads: Modern Analytics Stack & Semantic Layer
 
 > **A production-grade analytics platform that reconciles cross-functional revenue, multi-touch CAC/LTV attribution, and subscription MRR movements using Snowflake, dbt Core, MetricFlow, and GitHub Actions CI/CD.**
 
@@ -10,7 +10,7 @@
 
 ---
 
-## 📑 Table of Contents
+## Table of Contents
 
 1. [Executive Summary](#-executive-summary)
 2. [Pipeline Architecture](#-pipeline-architecture)
@@ -28,7 +28,7 @@
 
 ---
 
-## 🎯 Executive Summary
+##  Executive Summary
 
 **Northwind Threads** is a high-growth direct-to-consumer (DTC) apparel brand running an e-commerce storefront and a recurring subscription club (*Threads Club*).
 
@@ -46,7 +46,7 @@ A centralized, tested, and contract-governed analytics warehouse on **Snowflake*
 
 ---
 
-## 🏗 Pipeline Architecture
+## Pipeline Architecture
 
 ![Northwind Threads Modern Analytics Architecture](images/Northwind_Modern_Analytics_Architecture.png)
 
@@ -56,11 +56,11 @@ A centralized, tested, and contract-governed analytics warehouse on **Snowflake*
 | **2** | **Snowflake RAW** | Source-aligned ingestion into `RAW.SHOPIFY`, `RAW.STRIPE`, `RAW.APP_DB`, `RAW.ADS`, `RAW.ZENDESK` |
 | **3** | **dbt Core** | **Staging** (type casting, deduplication, PII sanitization) → **Intermediate** (identity stitching, MRR state engine) → **Marts** (star schema) |
 | **4** | **MetricFlow** | Governed metrics as a single source of truth, consumed by Lightdash and Metabase |
-| ⚙️ | **Platform** | Scheduled dbt runs, GitHub Actions CI/CD, dbt tests, source freshness, and Elementary monitoring |
+|  | **Platform** | Scheduled dbt runs, GitHub Actions CI/CD, dbt tests, source freshness, and Elementary monitoring |
 
 ---
 
-## 📊 Stakeholder Metrics Delivered
+## Stakeholder Metrics Delivered
 
 | Stakeholder | Business Question | Implemented Metrics | Core Mart / Semantic Entity |
 | :--- | :--- | :--- | :--- |
@@ -71,7 +71,7 @@ A centralized, tested, and contract-governed analytics warehouse on **Snowflake*
 
 ---
 
-## 🧱 Warehouse Design
+## Warehouse Design
 
 ### 1. Environment Isolation & Least-Privilege RBAC
 
@@ -98,7 +98,7 @@ Compute and access are separated to enforce least privilege and control credit c
 
 ---
 
-## 🪤 Engineering Challenges & Data Traps
+## Engineering Challenges & Data Traps
 
 Real-world raw data is messy. The pipeline explicitly handles and validates the following planted edge cases.
 
@@ -150,7 +150,7 @@ Real-world raw data is messy. The pipeline explicitly handles and validates the 
 
 ---
 
-## 🧠 Semantic Layer (MetricFlow)
+## Semantic Layer (MetricFlow)
 
 Metrics are declared once in YAML so that no dashboard or analyst re-implements revenue logic in raw SQL.
 
@@ -208,7 +208,7 @@ mf query --metrics monthly_recurring_revenue,net_revenue_retention --group-by me
 
 ---
 
-## 📈 BI Dashboard
+##  BI Dashboard
 
 The final dashboard answers the stakeholder questions above directly from the semantic layer.
 
@@ -223,7 +223,7 @@ The final dashboard answers the stakeholder questions above directly from the se
 
 ---
 
-## 🚦 CI/CD & Production Governance
+##  CI/CD & Production Governance
 
 A GitHub Actions lifecycle keeps the warehouse scalable and catches defects before they reach production.
 
@@ -241,7 +241,7 @@ flowchart TD
 
 ---
 
-## ✅ Data Quality & Observability
+## Data Quality & Observability
 
 | Control | Implementation |
 | :--- | :--- |
@@ -254,7 +254,7 @@ flowchart TD
 
 ---
 
-## 📁 Repository Structure
+## Repository Structure
 
 ```text
 ├── .github/
@@ -286,7 +286,7 @@ flowchart TD
 
 ---
 
-## 🚀 Getting Started
+##  Getting Started
 
 ```bash
 # 1. Clone and install
@@ -306,7 +306,7 @@ mf query --metrics monthly_recurring_revenue --group-by metric_time__month
 
 ---
 
-## 💼 Business Impact
+## Business Impact
 
 | Outcome | Result |
 | :--- | :--- |
@@ -317,6 +317,6 @@ mf query --metrics monthly_recurring_revenue --group-by metric_time__month
 
 ---
 
-## 👤 Author
+## Author
 
-**[David Asikpo]** · Analytics Engineer
+**David Asikpo** · Analytics Engineer
